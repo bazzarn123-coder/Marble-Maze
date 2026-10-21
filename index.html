@@ -1,0 +1,1313 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Marble Maze Tilt Game - 100 Levels</title>
+    
+    <!-- Favicon / Browser Address Bar Icon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='46' fill='%23050811' stroke='%2338bdf8' stroke-width='4'/><circle cx='50' cy='50' r='30' fill='url(%23g)'/><defs><radialGradient id='g' cx='35%' cy='35%' r='65%'><stop offset='0%' stop-color='%23ffffff'/><stop offset='40%' stop-color='%2394a3b8'/><stop offset='100%' stop-color='%230f172a'/></radialGradient></defs></svg>">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            box-sizing: border-box;
+        }
+        html, body {
+            height: 100%;
+            height: 100dvh;
+            width: 100vw;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #050811;
+            color: #f3f4f6;
+            font-family: 'Outfit', sans-serif;
+        }
+        .full-dvh {
+            height: 100vh;
+            height: 100dvh;
+        }
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.92);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        .glow-emerald {
+            box-shadow: 0 0 25px rgba(16, 185, 129, 0.5);
+        }
+        .flat-progress-bar {
+            transition: width 0.1s linear;
+        }
+        
+        /* Clear Splash Screen styling - No blur filter */
+        #splashScreen {
+            filter: none !important;
+            -webkit-filter: none !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+        }
+        #splashImage {
+            filter: none !important;
+            -webkit-filter: none !important;
+            object-fit: cover;
+            width: 100%;
+            height: 100%;
+        }
+
+        @keyframes pulsePrompt {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.97); }
+        }
+        .animate-pulse-prompt {
+            animation: pulsePrompt 1.8s infinite ease-in-out;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(56, 189, 248, 0.4);
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(56, 189, 248, 0.8);
+        }
+    </style>
+</head>
+<body class="flex flex-col justify-between full-dvh w-screen p-2 md:p-4 select-none relative overflow-hidden">
+
+    <!-- INITIAL SPLASH SCREEN OVERLAY -->
+    <div id="splashScreen" class="fixed inset-0 z-50 flex items-center justify-center cursor-pointer full-dvh w-screen bg-black">
+        <img id="splashImage" src="splash.jpg" alt="Marble Maze Splash Screen" class="absolute inset-0 z-0">
+        
+        <!-- Tap anywhere prompt -->
+        <div class="absolute bottom-12 left-1/2 -translate-x-1/2 z-10 w-11/12 max-w-md text-center pointer-events-none">
+            <div class="inline-block px-6 py-3 rounded-2xl bg-slate-950/80 border border-cyan-400/60 shadow-2xl backdrop-blur-sm animate-pulse-prompt">
+                <p class="font-orbitron text-base sm:text-lg font-black tracking-widest text-cyan-300 uppercase drop-shadow-[0_0_10px_rgba(56,189,248,0.8)]">
+                    TAP ANYWHERE TO START
+                </p>
+                <p class="text-[11px] text-gray-300 mt-0.5 tracking-wide">Tilt to guide • 100 Levels</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOP BAR / HUD -->
+    <header class="w-full max-w-5xl mx-auto flex items-center justify-between glass-panel rounded-2xl px-3.5 py-2 z-20 shadow-2xl shrink-0">
+        <div class="flex items-center gap-2">
+            <button id="btnPause" class="p-2.5 rounded-xl bg-gray-800/90 hover:bg-gray-700 text-cyan-400 transition-all border border-gray-700 active:scale-95" title="Pause Game">
+                <i class="fa-solid fa-pause text-base"></i>
+            </button>
+            <button id="btnResetLevel" class="p-2.5 rounded-xl bg-gray-800/90 hover:bg-gray-700 text-amber-400 transition-all border border-gray-700 active:scale-95" title="Restart Level">
+                <i class="fa-solid fa-rotate-right text-base"></i>
+            </button>
+            <div class="ml-1">
+                <div id="hudThemeTag" class="text-[9px] uppercase tracking-wider text-amber-400 font-bold leading-none">Seamless Glass</div>
+                <div id="hudLevel" class="text-base md:text-lg font-orbitron font-bold text-cyan-400 leading-tight">Level 1 / 100</div>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button id="btnCalibrate" class="p-2.5 rounded-xl bg-cyan-900/60 hover:bg-cyan-800 text-cyan-300 border border-cyan-700/60 transition-all active:scale-95" title="Calibrate Neutral Tilt">
+                <i class="fa-solid fa-compass text-base"></i>
+            </button>
+            <button id="btnGyro" class="p-2.5 rounded-xl bg-indigo-900/80 hover:bg-indigo-800 text-indigo-300 border border-indigo-600 transition-all active:scale-95 flex items-center gap-1.5 shadow-lg">
+                <i class="fa-solid fa-mobile-screen-button text-base animate-pulse"></i>
+                <span class="text-xs font-bold hidden sm:inline">Motion Tilt</span>
+            </button>
+            <button id="btnSound" class="p-2.5 rounded-xl bg-gray-800/90 hover:bg-gray-700 text-cyan-400 border border-gray-700 transition-all active:scale-95">
+                <i id="iconSound" class="fa-solid fa-volume-high text-base"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- GAME CANVAS CONTAINER -->
+    <main id="canvasWrapper" class="relative flex-1 w-full max-w-5xl mx-auto my-2 flex items-center justify-center overflow-hidden rounded-2xl glass-panel shadow-2xl border border-gray-800 bg-slate-950">
+        <canvas id="gameCanvas" class="block w-full h-full cursor-grab active:cursor-grabbing"></canvas>
+
+        <!-- START SEQUENCE OVERLAY -->
+        <div id="flatOverlay" class="absolute inset-0 bg-slate-950/92 backdrop-blur-md z-40 flex flex-col items-center justify-center p-4 text-center hidden">
+            <div class="glass-panel p-6 md:p-8 rounded-3xl border border-cyan-500/40 max-w-sm w-full space-y-5 shadow-2xl relative overflow-hidden">
+                <div id="motionPermissionSection" class="hidden space-y-3">
+                    <i class="fa-solid fa-mobile-screen-button text-4xl text-cyan-400 animate-bounce"></i>
+                    <h3 class="text-lg font-orbitron font-bold text-white">Sensor Permission Needed</h3>
+                    <p class="text-xs text-gray-300">Tap below to grant access to device orientation tilt controls.</p>
+                    <button id="btnGrantPermission" class="w-full py-3 rounded-xl bg-cyan-600 hover:bg-cyan-500 font-orbitron font-bold text-white text-xs shadow-lg transition-all">
+                        GRANT TILT ACCESS
+                    </button>
+                </div>
+
+                <div id="holdFlatSection" class="space-y-4">
+                    <div class="relative w-24 h-24 mx-auto flex items-center justify-center">
+                        <div class="absolute inset-0 rounded-full border-4 border-gray-800"></div>
+                        <div id="bubbleTarget" class="absolute w-8 h-8 rounded-full bg-cyan-500/30 border-2 border-cyan-400 flex items-center justify-center transition-all duration-75">
+                            <div class="w-3 h-3 rounded-full bg-cyan-300"></div>
+                        </div>
+                        <i class="fa-solid fa-mobile-screen text-3xl text-gray-400"></i>
+                    </div>
+
+                    <div>
+                        <h2 class="text-xl font-orbitron font-extrabold text-white uppercase tracking-wider">Hold Phone Flat</h2>
+                        <p class="text-xs text-gray-300 mt-1">Keep device level for 2 seconds to start</p>
+                    </div>
+
+                    <div class="w-full bg-gray-800 h-3 rounded-full overflow-hidden border border-gray-700">
+                        <div id="holdProgressBar" class="flat-progress-bar h-full bg-gradient-to-r from-cyan-500 to-emerald-400 w-0"></div>
+                    </div>
+
+                    <div class="text-[11px] font-mono text-cyan-400 flex justify-between px-1">
+                        <span>Tilt: <span id="tiltAngleVal">0°</span></span>
+                        <span id="holdTimerVal">0.0s / 2.0s</span>
+                    </div>
+
+                    <button id="btnBypassStart" class="w-full py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold border border-gray-700 transition-all text-xs">
+                        Manual Start / Bypass
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="levelTitleBanner" class="absolute top-3 left-1/2 -translate-x-1/2 glass-panel px-4 py-1.5 rounded-full border border-cyan-500/40 text-cyan-300 font-orbitron text-xs md:text-sm font-semibold tracking-wide opacity-0 transition-opacity duration-500 pointer-events-none shadow-lg z-10 text-center whitespace-nowrap">
+            Level 1: Big Maze
+        </div>
+
+        <div class="absolute top-3 right-3 glass-panel p-1.5 rounded-xl border border-gray-700 z-10 hidden sm:block">
+            <canvas id="miniMapCanvas" width="95" height="95" class="block rounded bg-slate-950/80"></canvas>
+            <div class="text-[9px] text-cyan-400 font-mono text-center mt-0.5">Mini-Map</div>
+        </div>
+
+        <div id="touchControls" class="absolute bottom-4 left-4 z-10 flex flex-col items-center gap-1 opacity-85 md:hidden pointer-events-auto">
+            <button id="btnTouchUp" class="w-11 h-11 rounded-xl bg-gray-900/90 border border-cyan-500/40 text-cyan-400 text-lg flex items-center justify-center active:bg-cyan-600 active:text-white shadow-lg">
+                <i class="fa-solid fa-chevron-up"></i>
+            </button>
+            <div class="flex gap-1">
+                <button id="btnTouchLeft" class="w-11 h-11 rounded-xl bg-gray-900/90 border border-cyan-500/40 text-cyan-400 text-lg flex items-center justify-center active:bg-cyan-600 active:text-white shadow-lg">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                <button id="btnTouchDown" class="w-11 h-11 rounded-xl bg-gray-900/90 border border-cyan-500/40 text-cyan-400 text-lg flex items-center justify-center active:bg-cyan-600 active:text-white shadow-lg">
+                    <i class="fa-solid fa-chevron-down"></i>
+                </button>
+                <button id="btnTouchRight" class="w-11 h-11 rounded-xl bg-gray-900/90 border border-cyan-500/40 text-cyan-400 text-lg flex items-center justify-center active:bg-cyan-600 active:text-white shadow-lg">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <div id="sensorNotice" class="absolute bottom-3 right-3 text-[10px] text-gray-300 glass-panel px-2.5 py-1 rounded-full border border-gray-700 flex items-center gap-1.5 z-10 shadow-md">
+            <span id="sensorDot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+            <span id="sensorText">Touch / Arrow Keys</span>
+        </div>
+    </main>
+
+    <!-- FOOTER NAV -->
+    <footer class="w-full max-w-5xl mx-auto glass-panel rounded-xl px-4 py-2 flex items-center justify-between text-xs text-gray-300 shrink-0">
+        <div class="flex items-center gap-1.5 text-[11px] sm:text-xs">
+            <span class="px-2 py-0.5 rounded bg-gray-800 border border-gray-700 font-mono text-cyan-400">Tilt Phone</span>
+            <span>or</span>
+            <span class="px-2 py-0.5 rounded bg-gray-800 border border-gray-700 font-mono text-cyan-400">D-Pad / WASD</span>
+        </div>
+        <div class="flex items-center gap-4">
+            <button id="btnLevelSelect" class="text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1">
+                <i class="fa-solid fa-list"></i> 100 Levels
+            </button>
+            <button id="btnSettings" class="text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1">
+                <i class="fa-solid fa-sliders"></i> Settings
+            </button>
+        </div>
+    </footer>
+
+    <!-- MODALS -->
+    <div id="modalPause" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass-panel w-full max-w-sm rounded-3xl p-6 border border-cyan-500/30 shadow-2xl text-center space-y-5">
+            <h2 class="text-2xl font-orbitron font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-indigo-400">
+                GAME PAUSED
+            </h2>
+            <p class="text-gray-300 text-xs leading-relaxed">
+                Glide smoothly along seamless glass walls and pass safely through floor holes!
+            </p>
+
+            <div class="space-y-2.5">
+                <button id="btnResume" class="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 font-orbitron font-bold text-white shadow-lg hover:opacity-90 transition-all">
+                    RESUME
+                </button>
+                <button id="btnCalibrateModal" class="w-full py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-cyan-300 font-semibold border border-cyan-700/50 transition-all text-sm flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-compass"></i> Calibrate Neutral Holding Tilt
+                </button>
+                <button id="btnRestart" class="w-full py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 font-semibold border border-gray-700 transition-all text-sm">
+                    Restart Level
+                </button>
+                <button id="btnOpenLevels" class="w-full py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 font-semibold border border-gray-700 transition-all text-sm">
+                    Select Level (1 - 100)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalLevels" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass-panel w-full max-w-2xl rounded-3xl p-5 border border-cyan-500/30 shadow-2xl flex flex-col max-h-[85vh]">
+            <div class="flex items-center justify-between pb-3 border-b border-gray-800 mb-3">
+                <h3 class="text-xl font-orbitron font-bold text-cyan-400">Select Level (1 to 100)</h3>
+                <button id="btnCloseLevels" class="p-1.5 text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div id="levelsGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 overflow-y-auto pr-1 flex-1">
+            </div>
+        </div>
+    </div>
+
+    <div id="modalSettings" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass-panel w-full max-w-sm rounded-3xl p-5 border border-cyan-500/30 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-gray-800 pb-2">
+                <h3 class="text-lg font-orbitron font-bold text-cyan-400">Settings</h3>
+                <button id="btnCloseSettings" class="p-1.5 text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <div class="space-y-2">
+                <div class="flex justify-between text-xs">
+                    <span class="text-gray-300 font-semibold">Tilt Sensitivity</span>
+                    <span id="sensVal" class="text-cyan-400 font-mono font-bold">1.5x</span>
+                </div>
+                <input id="sensSlider" type="range" min="0.5" max="3.0" step="0.1" value="1.5" class="w-full accent-cyan-500 bg-gray-800 h-2 rounded-lg cursor-pointer">
+            </div>
+
+            <div class="flex items-center justify-between py-2 border-t border-b border-gray-800">
+                <span class="text-gray-300 text-xs font-semibold">Invert Tilt Direction</span>
+                <input id="toggleInvert" type="checkbox" class="w-4 h-4 accent-cyan-500 rounded cursor-pointer">
+            </div>
+
+            <div class="flex items-center justify-between py-2 border-b border-gray-800">
+                <span class="text-gray-300 text-xs font-semibold">Sound FX</span>
+                <input id="toggleSound" type="checkbox" checked class="w-4 h-4 accent-cyan-500 rounded cursor-pointer">
+            </div>
+
+            <button id="btnSaveSettings" class="w-full py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 font-orbitron font-bold text-white text-sm shadow-md transition-all">
+                Save & Close
+            </button>
+        </div>
+    </div>
+
+    <div id="modalWin" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass-panel w-full max-w-sm rounded-3xl p-6 border border-emerald-500/40 shadow-2xl text-center space-y-5 glow-emerald">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-500/20 border-2 border-emerald-400 text-emerald-400 text-3xl shadow-lg">
+                <i class="fa-solid fa-door-open"></i>
+            </div>
+            <div>
+                <h2 class="text-2xl font-orbitron font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-200">
+                    MAZE CLEARED!
+                </h2>
+                <p id="winLevelName" class="text-gray-300 text-xs mt-1">Level Passed</p>
+            </div>
+
+            <div class="flex gap-2">
+                <button id="btnRetryWin" class="flex-1 py-3 rounded-xl bg-gray-800 hover:bg-gray-700 font-semibold text-gray-200 border border-gray-700 text-xs transition-all">
+                    Retry
+                </button>
+                <button id="btnNextLevel" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 font-orbitron font-bold text-white text-xs shadow-lg hover:opacity-90 transition-all">
+                    Next Level <i class="fa-solid fa-arrow-right ml-1"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- GAME ENGINE CODE -->
+    <script>
+        class MazeGenerator {
+            static generateLevel(levelNum) {
+                const gridCols = Math.min(45, 17 + Math.floor((levelNum - 1) / 2) * 2);
+                const width = gridCols;
+                const height = gridCols;
+
+                let grid, isSolvable = false, attempts = 0;
+
+                while (!isSolvable && attempts < 250) {
+                    attempts++;
+                    grid = Array.from({ length: height }, () => Array(width).fill('W'));
+
+                    const stack = [];
+                    grid[1][1] = '.';
+                    stack.push([1, 1]);
+
+                    while (stack.length > 0) {
+                        const [cx, cy] = stack[stack.length - 1];
+                        const neighbors = [];
+                        const dirs = [[0, -2], [0, 2], [-2, 0], [2, 0]];
+
+                        dirs.forEach(([dx, dy]) => {
+                            const nx = cx + dx, ny = cy + dy;
+                            if (nx > 0 && nx < width - 1 && ny > 0 && ny < height - 1 && grid[ny][nx] === 'W') {
+                                neighbors.push([nx, ny, dx, dy]);
+                            }
+                        });
+
+                        if (neighbors.length > 0) {
+                            const [nx, ny, dx, dy] = neighbors[Math.floor(Math.random() * neighbors.length)];
+                            grid[cy + dy / 2][cx + dx / 2] = '.';
+                            grid[ny][nx] = '.';
+                            stack.push([nx, ny]);
+                        } else {
+                            stack.pop();
+                        }
+                    }
+
+                    grid[1][1] = 'S';
+
+                    const exitCandidates = [];
+                    for (let r = 1; r < height - 1; r++) {
+                        for (let c = 1; c < width - 1; c++) {
+                            if (grid[r][c] === '.' && (Math.abs(c - 1) + Math.abs(r - 1) > Math.floor(width * 0.8))) {
+                                exitCandidates.push({ x: c, y: r });
+                            }
+                        }
+                    }
+
+                    const exitPos = exitCandidates.length > 0 
+                        ? exitCandidates[Math.floor(Math.random() * exitCandidates.length)]
+                        : { x: width - 2, y: height - 2 };
+
+                    grid[exitPos.y][exitPos.x] = 'G';
+
+                    const holeCount = Math.min(45, 6 + Math.floor(levelNum / 2));
+                    let placed = 0;
+                    while (placed < holeCount) {
+                        let rx = Math.floor(Math.random() * (width - 2)) + 1;
+                        let ry = Math.floor(Math.random() * (height - 2)) + 1;
+
+                        if (grid[ry][rx] === '.' && 
+                            !(rx === 1 && ry === 1) && 
+                            !(rx === exitPos.x && ry === exitPos.y) &&
+                            Math.abs(rx - exitPos.x) + Math.abs(ry - exitPos.y) > 2) {
+                            
+                            const sizeType = Math.random() > 0.35 ? 'HOLE_S' : 'HOLE_L';
+                            grid[ry][rx] = sizeType;
+                            placed++;
+                        }
+                    }
+
+                    isSolvable = this.verifySolvability(grid, exitPos);
+                }
+
+                return grid;
+            }
+
+            static verifySolvability(grid, exitPos) {
+                const height = grid.length, width = grid[0].length;
+                const queue = [{ x: 1, y: 1 }];
+                const visited = new Set(['1,1']);
+
+                while (queue.length > 0) {
+                    const current = queue.shift();
+                    if (current.x === exitPos.x && current.y === exitPos.y) return true;
+
+                    const dirs = [{ x: current.x + 1, y: current.y }, { x: current.x - 1, y: current.y }, { x: current.x, y: current.y + 1 }, { x: current.x, y: current.y - 1 }];
+
+                    for (let d of dirs) {
+                        const key = `${d.x},${d.y}`;
+                        if (d.x >= 0 && d.x < width && d.y >= 0 && d.y < height && !visited.has(key)) {
+                            const tile = grid[d.y][d.x];
+                            let isPassable = (tile !== 'W' && tile !== 'HOLE_L');
+
+                            if (isPassable) {
+                                visited.add(key);
+                                queue.push(d);
+                            }
+                        }
+                    }
+                }
+                return false;
+            }
+        }
+
+        class WebAudioFX {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+                this.lastBounceTime = 0;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    if (AudioContext) this.ctx = new AudioContext();
+                }
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            playBounce(vol = 0.2) {
+                if (!this.enabled) return;
+                this.init();
+                if (!this.ctx) return;
+
+                const nowTime = Date.now();
+                if (nowTime - this.lastBounceTime < 50) return;
+                this.lastBounceTime = nowTime;
+
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(35, this.ctx.currentTime + 0.07);
+
+                    gain.gain.setValueAtTime(Math.min(vol, 0.4), this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.07);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.07);
+                } catch(e) {}
+            }
+
+            playFall() {
+                if (!this.enabled) return;
+                this.init();
+                if (!this.ctx) return;
+
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(260, this.ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(35, this.ctx.currentTime + 0.35);
+
+                    gain.gain.setValueAtTime(0.35, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.35);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.35);
+                } catch(e) {}
+            }
+
+            playWin() {
+                if (!this.enabled) return;
+                this.init();
+                if (!this.ctx) return;
+
+                try {
+                    const now = this.ctx.currentTime;
+                    const notes = [293.66, 369.99, 440.00, 587.33];
+                    notes.forEach((freq, idx) => {
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+
+                        gain.gain.setValueAtTime(0.25, now + idx * 0.08);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.22);
+
+                        osc.connect(gain);
+                        gain.connect(this.ctx.destination);
+
+                        osc.start(now + idx * 0.08);
+                        osc.stop(now + idx * 0.08 + 0.22);
+                    });
+                } catch(e) {}
+            }
+        }
+
+        const audioFX = new WebAudioFX();
+
+        const config = {
+            sensitivity: 1.5,
+            invertX: false,
+            soundEnabled: true
+        };
+
+        let currentLevelIdx = 0;
+        let gameActive = false;
+        let gamePaused = false;
+        let waitingForFlat = false;
+        let holdFlatTime = 0;
+        let flatCheckInterval = null;
+        let splashDismissed = false;
+
+        const baselineOrientation = { beta: 0, gamma: 0, isCalibrated: false };
+
+        let canvas, ctx, miniCanvas, miniCtx;
+        let cellSize = 60;
+        let mapCols = 0, mapRows = 0;
+        let mapWidth = 0, mapHeight = 0;
+        let cameraX = 0, cameraY = 0;
+
+        const marble = {
+            x: 0, y: 0,
+            vx: 0, vy: 0,
+            radius: 12,
+            rotation: 0
+        };
+
+        const keys = { Up: false, Down: false, Left: false, Right: false };
+        let tilt = { x: 0, y: 0 };
+        let rawBeta = 0, rawGamma = 0;
+
+        let currentGrid = [];
+        let floorHoles = [];
+        let glassSegments = [];
+        let exitGate = { x: 0, y: 0, radius: 22, pulse: 0, gridX: 0, gridY: 0 };
+
+        window.addEventListener('load', () => {
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+
+            miniCanvas = document.getElementById('miniMapCanvas');
+            miniCtx = miniCanvas ? miniCanvas.getContext('2d') : null;
+
+            setupEventListeners();
+            setupTouchControls();
+            checkGyroSupportAndSetup();
+
+            currentGrid = MazeGenerator.generateLevel(1);
+            fitCanvasToContainer();
+            repositionLevelObjects();
+
+            window.addEventListener('resize', fitCanvasToContainer);
+            window.addEventListener('orientationchange', fitCanvasToContainer);
+            setTimeout(fitCanvasToContainer, 100);
+
+            requestAnimationFrame(gameLoop);
+        });
+
+        function fitCanvasToContainer() {
+            const wrapper = document.getElementById('canvasWrapper');
+            if (!wrapper) return;
+
+            const rect = wrapper.getBoundingClientRect();
+            let width = rect.width || window.innerWidth;
+            let height = rect.height || window.innerHeight * 0.6;
+
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = Math.floor(width * dpr);
+            canvas.height = Math.floor(height * dpr);
+
+            ctx.scale(dpr, dpr);
+
+            cellSize = Math.min(width, height) / 8.5;
+            cellSize = Math.max(cellSize, 44);
+
+            marble.radius = cellSize * 0.22;
+            exitGate.radius = cellSize * 0.40;
+
+            repositionLevelObjects();
+        }
+
+        function buildSeamlessGlassSegments() {
+            glassSegments = [];
+            const rows = currentGrid.length;
+            const cols = currentGrid[0].length;
+
+            for (let r = 0; r < rows; r++) {
+                let c = 0;
+                while (c < cols) {
+                    if (currentGrid[r][c] === 'W') {
+                        let startC = c;
+                        while (c < cols && currentGrid[r][c] === 'W') {
+                            c++;
+                        }
+                        let endC = c;
+                        glassSegments.push({ x1: startC * cellSize, y1: r * cellSize, x2: endC * cellSize, y2: r * cellSize });
+                        glassSegments.push({ x1: startC * cellSize, y1: (r + 1) * cellSize, x2: endC * cellSize, y2: (r + 1) * cellSize });
+                    } else {
+                        c++;
+                    }
+                }
+            }
+
+            for (let c = 0; c < cols; c++) {
+                let r = 0;
+                while (r < rows) {
+                    if (currentGrid[r][c] === 'W') {
+                        let startR = r;
+                        while (r < rows && currentGrid[r][c] === 'W') {
+                            r++;
+                        }
+                        let endR = r;
+                        glassSegments.push({ x1: c * cellSize, y1: startR * cellSize, x2: c * cellSize, y2: endR * cellSize });
+                        glassSegments.push({ x1: (c + 1) * cellSize, y1: startR * cellSize, x2: (c + 1) * cellSize, y2: endR * cellSize });
+                    } else {
+                        r++;
+                    }
+                }
+            }
+        }
+
+        function repositionLevelObjects() {
+            if (!currentGrid.length) return;
+
+            mapRows = currentGrid.length;
+            mapCols = currentGrid[0].length;
+            mapWidth = mapCols * cellSize;
+            mapHeight = mapRows * cellSize;
+
+            floorHoles = [];
+            let startFound = false;
+
+            buildSeamlessGlassSegments();
+
+            for (let r = 0; r < mapRows; r++) {
+                for (let c = 0; c < mapCols; c++) {
+                    const tile = currentGrid[r][c];
+                    const cx = c * cellSize + cellSize / 2;
+                    const cy = r * cellSize + cellSize / 2;
+
+                    if (tile === 'S') {
+                        startFound = true;
+                        marble.x = cx;
+                        marble.y = cy;
+                        marble.vx = 0;
+                        marble.vy = 0;
+                    } else if (tile === 'G') {
+                        exitGate.x = cx;
+                        exitGate.y = cy;
+                        exitGate.gridX = c;
+                        exitGate.gridY = r;
+                    } else if (tile.startsWith('HOLE_')) {
+                        const isLarge = tile === 'HOLE_L';
+                        floorHoles.push({ x: cx, y: cy, r: isLarge ? cellSize * 0.42 : cellSize * 0.22, isLarge });
+                    }
+                }
+            }
+
+            if (!startFound) {
+                marble.x = 1 * cellSize + cellSize / 2;
+                marble.y = 1 * cellSize + cellSize / 2;
+                marble.vx = 0;
+                marble.vy = 0;
+            }
+        }
+
+        function dismissSplash() {
+            if (splashDismissed) return;
+            splashDismissed = true;
+            audioFX.init();
+
+            const splash = document.getElementById('splashScreen');
+            splash.style.transition = 'opacity 0.4s ease-out';
+            splash.style.opacity = '0';
+
+            setTimeout(() => {
+                splash.classList.add('hidden');
+                loadLevel(0);
+            }, 400);
+        }
+
+        function loadLevel(idx) {
+            currentLevelIdx = idx;
+            const levelNum = idx + 1;
+
+            currentGrid = MazeGenerator.generateLevel(levelNum);
+            fitCanvasToContainer();
+
+            document.getElementById('hudLevel').textContent = `Level ${levelNum} / 100`;
+            document.getElementById('hudThemeTag').textContent = `Seamless Glass (${currentGrid[0].length}x${currentGrid.length})`;
+
+            startHoldFlatSequence();
+        }
+
+        function startHoldFlatSequence() {
+            gameActive = false;
+            gamePaused = false;
+            waitingForFlat = true;
+            holdFlatTime = 0;
+
+            document.getElementById('flatOverlay').classList.remove('hidden');
+            document.getElementById('holdProgressBar').style.width = '0%';
+            document.getElementById('holdTimerVal').textContent = '0.0s / 2.0s';
+
+            clearInterval(flatCheckInterval);
+            flatCheckInterval = setInterval(checkHoldFlatStatus, 100);
+        }
+
+        function checkHoldFlatStatus() {
+            if (!waitingForFlat) return;
+
+            const betaDev = Math.abs(rawBeta);
+            const gammaDev = Math.abs(rawGamma);
+            const totalTilt = Math.hypot(betaDev, gammaDev);
+
+            document.getElementById('tiltAngleVal').textContent = `${Math.round(totalTilt)}°`;
+
+            const bubble = document.getElementById('bubbleTarget');
+            const maxOffset = 30;
+            const clampX = Math.max(-maxOffset, Math.min(maxOffset, (rawGamma / 15) * maxOffset));
+            const clampY = Math.max(-maxOffset, Math.min(maxOffset, (rawBeta / 15) * maxOffset));
+            bubble.style.transform = `translate(${clampX}px, ${clampY}px)`;
+
+            if (totalTilt <= 6.0) {
+                holdFlatTime += 0.1;
+                const progressPct = Math.min(100, (holdFlatTime / 2.0) * 100);
+                document.getElementById('holdProgressBar').style.width = `${progressPct}%`;
+                document.getElementById('holdTimerVal').textContent = `${holdFlatTime.toFixed(1)}s / 2.0s`;
+
+                if (holdFlatTime >= 2.0) {
+                    completeStartSequence();
+                }
+            } else {
+                holdFlatTime = 0;
+                document.getElementById('holdProgressBar').style.width = '0%';
+                document.getElementById('holdTimerVal').textContent = '0.0s / 2.0s';
+            }
+        }
+
+        function completeStartSequence() {
+            waitingForFlat = false;
+            clearInterval(flatCheckInterval);
+
+            audioFX.playWin();
+            showLevelBanner(`Ready, Go! - Level ${currentLevelIdx + 1}`);
+            document.getElementById('flatOverlay').classList.add('hidden');
+
+            gameActive = true;
+        }
+
+        function checkGyroSupportAndSetup() {
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                document.getElementById('motionPermissionSection').classList.remove('hidden');
+            } else if (window.DeviceOrientationEvent) {
+                window.addEventListener('deviceorientation', handleOrientation, true);
+                updateSensorNotice(true, "Tilt Sensor Active");
+            } else {
+                updateSensorNotice(false, "Tilt Unsupported");
+            }
+        }
+
+        function setupEventListeners() {
+            // Splash screen listener
+            document.getElementById('splashScreen').addEventListener('click', dismissSplash);
+            document.getElementById('splashScreen').addEventListener('touchstart', dismissSplash);
+
+            document.getElementById('btnGrantPermission').addEventListener('click', async () => {
+                audioFX.init();
+                try {
+                    const res = await DeviceOrientationEvent.requestPermission();
+                    if (res === 'granted') {
+                        window.addEventListener('deviceorientation', handleOrientation, true);
+                        document.getElementById('motionPermissionSection').classList.add('hidden');
+                        updateSensorNotice(true, "Tilt Sensor Active");
+                    }
+                } catch(e) {}
+            });
+
+            document.getElementById('btnBypassStart').addEventListener('click', () => completeStartSequence());
+
+            window.addEventListener('keydown', e => {
+                audioFX.init();
+                if (['ArrowUp', 'KeyW'].includes(e.code)) keys.Up = true;
+                if (['ArrowDown', 'KeyS'].includes(e.code)) keys.Down = true;
+                if (['ArrowLeft', 'KeyA'].includes(e.code)) keys.Left = true;
+                if (['ArrowRight', 'KeyD'].includes(e.code)) keys.Right = true;
+            });
+
+            window.addEventListener('keyup', e => {
+                if (['ArrowUp', 'KeyW'].includes(e.code)) keys.Up = false;
+                if (['ArrowDown', 'KeyS'].includes(e.code)) keys.Down = false;
+                if (['ArrowLeft', 'KeyA'].includes(e.code)) keys.Left = false;
+                if (['ArrowRight', 'KeyD'].includes(e.code)) keys.Right = false;
+            });
+
+            document.getElementById('btnCalibrate').addEventListener('click', calibrateTilt);
+            document.getElementById('btnCalibrateModal').addEventListener('click', () => {
+                calibrateTilt();
+                togglePause();
+            });
+
+            document.getElementById('btnPause').addEventListener('click', togglePause);
+            document.getElementById('btnResume').addEventListener('click', togglePause);
+            document.getElementById('btnResetLevel').addEventListener('click', () => loadLevel(currentLevelIdx));
+            document.getElementById('btnRestart').addEventListener('click', () => {
+                togglePause();
+                loadLevel(currentLevelIdx);
+            });
+
+            document.getElementById('btnLevelSelect').addEventListener('click', openLevelSelectModal);
+            document.getElementById('btnOpenLevels').addEventListener('click', () => {
+                togglePause();
+                openLevelSelectModal();
+            });
+            document.getElementById('btnCloseLevels').addEventListener('click', () => {
+                document.getElementById('modalLevels').classList.add('hidden');
+            });
+
+            document.getElementById('btnSettings').addEventListener('click', () => {
+                document.getElementById('modalSettings').classList.remove('hidden');
+            });
+            document.getElementById('btnCloseSettings').addEventListener('click', () => {
+                document.getElementById('modalSettings').classList.add('hidden');
+            });
+
+            document.getElementById('sensSlider').addEventListener('input', (e) => {
+                config.sensitivity = parseFloat(e.target.value);
+                document.getElementById('sensVal').textContent = `${config.sensitivity.toFixed(1)}x`;
+            });
+
+            document.getElementById('btnSaveSettings').addEventListener('click', () => {
+                config.invertX = document.getElementById('toggleInvert').checked;
+                config.soundEnabled = document.getElementById('toggleSound').checked;
+                audioFX.enabled = config.soundEnabled;
+                document.getElementById('modalSettings').classList.add('hidden');
+            });
+
+            document.getElementById('btnSound').addEventListener('click', () => {
+                config.soundEnabled = !config.soundEnabled;
+                audioFX.enabled = config.soundEnabled;
+                document.getElementById('iconSound').className = config.soundEnabled 
+                    ? "fa-solid fa-volume-high text-base" 
+                    : "fa-solid fa-volume-xmark text-base text-gray-500";
+            });
+
+            document.getElementById('btnRetryWin').addEventListener('click', () => {
+                document.getElementById('modalWin').classList.add('hidden');
+                loadLevel(currentLevelIdx);
+            });
+
+            document.getElementById('btnNextLevel').addEventListener('click', () => {
+                document.getElementById('modalWin').classList.add('hidden');
+                if (currentLevelIdx < 99) {
+                    loadLevel(currentLevelIdx + 1);
+                } else {
+                    loadLevel(0);
+                }
+            });
+        }
+
+        function calibrateTilt() {
+            baselineOrientation.beta = rawBeta;
+            baselineOrientation.gamma = rawGamma;
+            baselineOrientation.isCalibrated = true;
+            showLevelBanner("Tilt Calibrated to Current Position!");
+        }
+
+        function handleOrientation(e) {
+            if (e.beta === null || e.gamma === null) return;
+
+            rawBeta = e.beta;
+            rawGamma = e.gamma;
+
+            let deltaGamma = e.gamma - baselineOrientation.gamma;
+            let deltaBeta = e.beta - baselineOrientation.beta;
+
+            let gx = deltaGamma / 18;
+            let gy = deltaBeta / 18;
+
+            gx = Math.max(-1, Math.min(1, gx));
+            gy = Math.max(-1, Math.min(1, gy));
+
+            if (config.invertX) gx = -gx;
+
+            tilt.x = gx;
+            tilt.y = gy;
+            updateSensorNotice(true, "Tilt Sensor Active");
+        }
+
+        function showLevelBanner(text) {
+            const banner = document.getElementById('levelTitleBanner');
+            banner.textContent = text;
+            banner.classList.remove('opacity-0');
+            setTimeout(() => {
+                banner.classList.add('opacity-0');
+            }, 2500);
+        }
+
+        function updateSensorNotice(active, text) {
+            document.getElementById('sensorText').textContent = text;
+            document.getElementById('sensorDot').className = active 
+                ? "w-2 h-2 rounded-full bg-emerald-400 animate-pulse"
+                : "w-2 h-2 rounded-full bg-amber-400 animate-pulse";
+        }
+
+        function togglePause() {
+            gamePaused = !gamePaused;
+            document.getElementById('modalPause').classList.toggle('hidden', !gamePaused);
+        }
+
+        function openLevelSelectModal() {
+            const grid = document.getElementById('levelsGrid');
+            grid.innerHTML = '';
+
+            for (let i = 0; i < 100; i++) {
+                const lvlNum = i + 1;
+                const isCurrent = i === currentLevelIdx;
+
+                const card = document.createElement('div');
+                card.className = `glass-panel p-2.5 rounded-xl border transition-all cursor-pointer flex flex-col justify-between hover:border-cyan-400 ${
+                    isCurrent ? 'border-cyan-400 bg-cyan-950/50' : 'border-gray-800'
+                }`;
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-center mb-0.5">
+                        <span class="font-orbitron font-bold text-cyan-400 text-xs">Lvl ${lvlNum}</span>
+                        <span class="text-[9px] text-cyan-300 font-semibold">Glass</span>
+                    </div>
+                `;
+
+                card.addEventListener('click', () => {
+                    document.getElementById('modalLevels').classList.add('hidden');
+                    loadLevel(i);
+                });
+
+                grid.appendChild(card);
+            }
+
+            document.getElementById('modalLevels').classList.remove('hidden');
+        }
+
+        function setupTouchControls() {
+            const bindTouch = (id, key) => {
+                const btn = document.getElementById(id);
+                if (!btn) return;
+                const start = (e) => { e.preventDefault(); audioFX.init(); keys[key] = true; };
+                const end = (e) => { e.preventDefault(); keys[key] = false; };
+                btn.addEventListener('touchstart', start);
+                btn.addEventListener('touchend', end);
+                btn.addEventListener('mousedown', start);
+                btn.addEventListener('mouseup', end);
+            };
+
+            bindTouch('btnTouchUp', 'Up');
+            bindTouch('btnTouchDown', 'Down');
+            bindTouch('btnTouchLeft', 'Left');
+            bindTouch('btnTouchRight', 'Right');
+        }
+
+        function gameLoop() {
+            if (gameActive && !gamePaused) {
+                const steps = 12;
+                for (let s = 0; s < steps; s++) {
+                    updatePhysicsSubStep(1 / steps);
+                }
+            }
+            render();
+            renderMiniMap();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function updatePhysicsSubStep(subdt) {
+            let ax = 0, ay = 0;
+            const accel = 0.65 * config.sensitivity * subdt;
+
+            if (Math.abs(tilt.x) > 0.05 || Math.abs(tilt.y) > 0.05) {
+                ax += tilt.x * accel;
+                ay += tilt.y * accel;
+            }
+
+            if (keys.Left) ax -= accel;
+            if (keys.Right) ax += accel;
+            if (keys.Up) ay -= accel;
+            if (keys.Down) ay += accel;
+
+            marble.vx += ax;
+            marble.vy += ay;
+
+            marble.x += marble.vx * subdt;
+            solveGlassSegmentCollisions();
+
+            marble.y += marble.vy * subdt;
+            solveGlassSegmentCollisions();
+
+            marble.rotation += Math.hypot(marble.vx, marble.vy) * 0.02;
+
+            checkTriggers();
+        }
+
+        function solveGlassSegmentCollisions() {
+            const r = marble.radius;
+
+            glassSegments.forEach(seg => {
+                const dx = seg.x2 - seg.x1;
+                const dy = seg.y2 - seg.y1;
+                const lengthSq = dx * dx + dy * dy;
+
+                if (lengthSq === 0) return;
+
+                let t = ((marble.x - seg.x1) * dx + (marble.y - seg.y1) * dy) / lengthSq;
+                t = Math.max(0, Math.min(1, t));
+
+                const nearestX = seg.x1 + t * dx;
+                const nearestY = seg.y1 + t * dy;
+
+                const distX = marble.x - nearestX;
+                const distY = marble.y - nearestY;
+                const dist = Math.hypot(distX, distY);
+
+                if (dist < r) {
+                    const overlap = r - dist;
+                    if (dist === 0) {
+                        marble.x += r;
+                    } else {
+                        const nx = distX / dist;
+                        const ny = distY / dist;
+
+                        marble.x += nx * overlap;
+                        marble.y += ny * overlap;
+
+                        const dot = marble.vx * nx + marble.vy * ny;
+                        if (dot < 0) {
+                            marble.vx -= dot * nx;
+                            marble.vy -= dot * ny;
+                            if (Math.hypot(marble.vx, marble.vy) > 0.8) {
+                                audioFX.playBounce(0.04);
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function checkTriggers() {
+            if (!gameActive) return;
+
+            const currentGridCol = Math.floor(marble.x / cellSize);
+            const currentGridRow = Math.floor(marble.y / cellSize);
+
+            if (currentGridCol === exitGate.gridX && currentGridRow === exitGate.gridY) {
+                winLevel();
+                return;
+            }
+
+            const distExit = Math.hypot(marble.x - exitGate.x, marble.y - exitGate.y);
+            if (distExit < cellSize * 0.85) {
+                winLevel();
+                return;
+            }
+
+            floorHoles.forEach(hole => {
+                const distHole = Math.hypot(marble.x - hole.x, marble.y - hole.y);
+                if (distHole < hole.r * (hole.isLarge ? 0.85 : 0.45)) {
+                    failLevel();
+                }
+            });
+        }
+
+        function failLevel() {
+            gameActive = false;
+            audioFX.playFall();
+            if (navigator.vibrate) navigator.vibrate([30, 50, 30]);
+
+            setTimeout(() => {
+                loadLevel(currentLevelIdx);
+            }, 350);
+        }
+
+        function winLevel() {
+            if (!gameActive) return;
+            gameActive = false;
+            audioFX.playWin();
+            if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
+
+            const lvlNum = currentLevelIdx + 1;
+            document.getElementById('winLevelName').textContent = `Level ${lvlNum} Passed!`;
+            document.getElementById('modalWin').classList.remove('hidden');
+        }
+
+        function render() {
+            if (!ctx) return;
+
+            const viewWidth = canvas.width / (window.devicePixelRatio || 1);
+            const viewHeight = canvas.height / (window.devicePixelRatio || 1);
+
+            const screenCenterX = viewWidth / 2;
+            const screenCenterY = viewHeight / 2;
+
+            cameraX = screenCenterX - marble.x;
+            cameraY = screenCenterY - marble.y;
+
+            ctx.fillStyle = '#050811';
+            ctx.fillRect(0, 0, viewWidth, viewHeight);
+
+            if (!currentGrid.length) return;
+
+            ctx.save();
+            ctx.translate(cameraX, cameraY);
+
+            const startCol = Math.max(0, Math.floor((-cameraX) / cellSize));
+            const endCol = Math.min(mapCols - 1, Math.ceil((-cameraX + viewWidth) / cellSize));
+            const startRow = Math.max(0, Math.floor((-cameraY) / cellSize));
+            const endRow = Math.min(mapRows - 1, Math.ceil((-cameraY + viewHeight) / cellSize));
+
+            for (let r = startRow; r <= endRow; r++) {
+                for (let c = startCol; c <= endCol; c++) {
+                    const x = c * cellSize;
+                    const y = r * cellSize;
+                    const tile = currentGrid[r][c];
+
+                    ctx.fillStyle = (r + c) % 2 === 0 ? '#0c2340' : '#071628';
+                    ctx.fillRect(x, y, cellSize, cellSize);
+
+                    ctx.strokeStyle = 'rgba(56, 189, 248, 0.05)';
+                    ctx.strokeRect(x, y, cellSize, cellSize);
+
+                    if (tile === 'W') {
+                        ctx.fillStyle = '#0f172a';
+                        ctx.fillRect(x, y, cellSize, cellSize);
+                    }
+                }
+            }
+
+            floorHoles.forEach(hole => {
+                const grad = ctx.createRadialGradient(hole.x, hole.y, 2, hole.x, hole.y, hole.r);
+                grad.addColorStop(0, '#000000');
+                grad.addColorStop(0.7, '#082f49');
+                grad.addColorStop(1, hole.isLarge ? '#38bdf8' : '#0284c7');
+
+                ctx.beginPath();
+                ctx.arc(hole.x, hole.y, hole.r, 0, Math.PI * 2);
+                ctx.fillStyle = grad;
+                ctx.fill();
+                ctx.strokeStyle = hole.isLarge ? '#38bdf8' : '#0284c7';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            });
+
+            glassSegments.forEach(seg => {
+                ctx.save();
+                ctx.shadowColor = '#38bdf8';
+                ctx.shadowBlur = 8;
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 3.5;
+                ctx.lineCap = 'round';
+
+                ctx.beginPath();
+                ctx.moveTo(seg.x1, seg.y1);
+                ctx.lineTo(seg.x2, seg.y2);
+                ctx.stroke();
+                ctx.restore();
+            });
+
+            exitGate.pulse = (exitGate.pulse || 0) + 0.05;
+            const pulseScale = 1 + Math.sin(exitGate.pulse) * 0.12;
+
+            ctx.save();
+            ctx.shadowColor = '#10b981';
+            ctx.shadowBlur = 22;
+
+            ctx.beginPath();
+            ctx.arc(exitGate.x, exitGate.y, exitGate.radius * pulseScale, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(16, 185, 129, 0.35)';
+            ctx.fill();
+
+            const exitGrad = ctx.createRadialGradient(
+                exitGate.x - 2, exitGate.y - 2, 2,
+                exitGate.x, exitGate.y, exitGate.radius
+            );
+            exitGrad.addColorStop(0, '#a7f3d0');
+            exitGrad.addColorStop(0.5, '#10b981');
+            exitGrad.addColorStop(1, '#047857');
+
+            ctx.beginPath();
+            ctx.arc(exitGate.x, exitGate.y, exitGate.radius * 0.75, 0, Math.PI * 2);
+            ctx.fillStyle = exitGrad;
+            ctx.fill();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = `${Math.floor(cellSize * 0.45)}px "Font Awesome 6 Free"`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('\uf52b', exitGate.x, exitGate.y);
+            ctx.restore();
+
+            ctx.restore();
+
+            if (marble.x > 0 && marble.y > 0) {
+                ctx.save();
+
+                const shadowOffsetX = 3 + tilt.x * 4;
+                const shadowOffsetY = 4 + tilt.y * 4;
+
+                ctx.beginPath();
+                ctx.arc(screenCenterX + shadowOffsetX, screenCenterY + shadowOffsetY, marble.radius, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+                ctx.fill();
+
+                const chromeGrad = ctx.createRadialGradient(
+                    screenCenterX - marble.radius * 0.35,
+                    screenCenterY - marble.radius * 0.35,
+                    1,
+                    screenCenterX,
+                    screenCenterY,
+                    marble.radius
+                );
+                chromeGrad.addColorStop(0, '#ffffff');
+                chromeGrad.addColorStop(0.2, '#f1f5f9');
+                chromeGrad.addColorStop(0.45, '#94a3b8');
+                chromeGrad.addColorStop(0.75, '#334155');
+                chromeGrad.addColorStop(1, '#0f172a');
+
+                ctx.beginPath();
+                ctx.arc(screenCenterX, screenCenterY, marble.radius, 0, Math.PI * 2);
+                ctx.fillStyle = chromeGrad;
+                ctx.shadowColor = '#cbd5e1';
+                ctx.shadowBlur = 8;
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.arc(screenCenterX - marble.radius * 0.35, screenCenterY - marble.radius * 0.35, marble.radius * 0.28, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+                ctx.fill();
+
+                ctx.restore();
+            }
+        }
+
+        function renderMiniMap() {
+            if (!miniCtx || !currentGrid.length) return;
+
+            const mw = miniCanvas.width;
+            const mh = miniCanvas.height;
+            const cellW = mw / mapCols;
+            const cellH = mh / mapRows;
+
+            miniCtx.fillStyle = 'rgba(5, 8, 17, 0.92)';
+            miniCtx.fillRect(0, 0, mw, mh);
+
+            for (let r = 0; r < mapRows; r++) {
+                for (let c = 0; c < mapCols; c++) {
+                    const tile = currentGrid[r][c];
+                    if (tile === 'W') {
+                        miniCtx.fillStyle = '#38bdf8';
+                        miniCtx.fillRect(c * cellW, r * cellH, cellW, cellH);
+                    } else if (tile.startsWith('HOLE_')) {
+                        miniCtx.fillStyle = tile === 'HOLE_L' ? '#0284c7' : '#38bdf8';
+                        miniCtx.fillRect(c * cellW, r * cellH, cellW, cellH);
+                    } else if (tile === 'G') {
+                        miniCtx.fillStyle = '#10b981';
+                        miniCtx.fillRect(c * cellW, r * cellH, cellW * 1.5, cellH * 1.5);
+                    }
+                }
+            }
+
+            const marbleCol = marble.x / cellSize;
+            const marbleRow = marble.y / cellSize;
+            miniCtx.fillStyle = '#38bdf8';
+            miniCtx.beginPath();
+            miniCtx.arc(marbleCol * cellW, marbleRow * cellH, 2.5, 0, Math.PI * 2);
+            miniCtx.fill();
+        }
+    </script>
+</body>
+</html>
+```
